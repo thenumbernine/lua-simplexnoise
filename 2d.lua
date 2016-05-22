@@ -27,7 +27,7 @@ for i=0,511 do
 	perm[i] = p[bit.band(i, 255) + 1]
 end
 
-function dot(g, ...)
+local function dot(g, ...)
 	local v = {...}
 	local sum = 0
 	for i=1,#v do
@@ -36,7 +36,7 @@ function dot(g, ...)
 	return sum
 end
 
-function noise(xin, yin)
+local function noise(xin, yin)
 	local n0, n1, n2	-- Noise contributions from the three corners
 	-- Skew the input space to determine which simplex cell we're in
 	local F2 = 0.5*(math.sqrt(3.0)-1.0)
