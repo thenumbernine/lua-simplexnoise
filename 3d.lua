@@ -1,14 +1,20 @@
 local ffi = require 'ffi'
 
-local function simplexDot(fp,x,y,z)	-- assumes a lua array (not a ctype array)
-	return fp[1] * x + fp[2] * y + fp[3] * z
+local function simplexDot(fp,x,y,z)	-- assumes a ctype array
+	return fp[0] * x + fp[1] * y + fp[2] * z
 end
 
-local grad3 = {
+local tmp = {
 	{1,1,0},{-1,1,0},{1,-1,0},{-1,-1,0},
 	{1,0,1},{-1,0,1},{1,0,-1},{-1,0,-1},
 	{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1}
 }
+local grad3 = ffi.new('float[?]', 3*#tmp)
+for i=1,#tmp do
+	for j=1,3 do
+		grad3[j-1 + 3 * (i-1)] = tmp[i][j]
+	end
+end
 
 local p = ffi.new('int[256]', {151,160,137,91,90,15,
   131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -41,9 +47,9 @@ end
 local function simplexNoise(xin,yin,zin)
 	local F3 = 1/3
 	local s = (xin+yin+zin)*F3
-	local i = math.floor(xin+s)
-	local j = math.floor(yin+s)
-	local k = math.floor(zin+s)
+	local i = ffi.cast('int', xin+s)
+	local j = ffi.cast('int', yin+s)
+	local k = ffi.cast('int', zin+s)
 	local G3 = 1/6
 	local t = (i+j+k)*G3
 	local X0 = i-t
@@ -94,7 +100,7 @@ local function simplexNoise(xin,yin,zin)
 		n0 = 0 
 	else
 		t0 = t0 * t0
-		n0 = t0 * t0 * simplexDot(grad3[gi0+1],x0,y0,z0)
+		n0 = t0 * t0 * simplexDot(grad3 + 3*gi0, x0,y0,z0)
 	end
 	
 	local t1 = .6 - x1*x1 - y1*y1 - z1*z1
@@ -103,7 +109,7 @@ local function simplexNoise(xin,yin,zin)
 		n1 = 0
 	else
 		t1 = t1 * t1
-		n1 = t1 * t1 * simplexDot(grad3[gi1+1], x1, y1, z1)
+		n1 = t1 * t1 * simplexDot(grad3 + 3*gi1, x1, y1, z1)
 	end
 	
 	local t2 = .6 - x2*x2 - y2*y2 - z2*z2
@@ -112,7 +118,7 @@ local function simplexNoise(xin,yin,zin)
 		n2 = 0
 	else
 		t2 = t2 * t2
-		n2 = t2 * t2 * simplexDot(grad3[gi2+1], x2, y2, z2)
+		n2 = t2 * t2 * simplexDot(grad3 + 3*gi2, x2, y2, z2)
 	end
 	
 	local t3 = .6 - x3*x3 - y3*y3 - z3*z3
@@ -121,7 +127,7 @@ local function simplexNoise(xin,yin,zin)
 		n3 = 0
 	else
 		t3 = t3 * t3
-		n3 = t3 * t3 * simplexDot(grad3[gi3+1], x3, y3, z3)
+		n3 = t3 * t3 * simplexDot(grad3 + 3*gi3, x3, y3, z3)
 	end
 	
 	return 32 * (n0 + n1 + n2 + n3)
