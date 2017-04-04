@@ -1,4 +1,4 @@
-local bit = require 'bit'
+local bit = bit32 or require 'bit'
 
 -- 2D simplex noise
 
