@@ -1,5 +1,4 @@
 local bit = require 'bit'
-local ffi = require 'ffi'
 
 -- 2D simplex noise
 
@@ -22,9 +21,9 @@ local  p = {151,160,137,91,90,15,
 	251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
 	49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
 	138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180}
-local perm = ffi.new('unsigned char[512]')
+local perm = {} 
 for i=0,511 do
-	perm[i] = p[bit.band(i, 255) + 1]
+	perm[i+1] = p[bit.band(i, 255) + 1]
 end
 
 local function dot(g, ...)
@@ -69,9 +68,9 @@ local function noise(xin, yin)
 	-- Work out the hashed gradient indices of the three simplex corners
 	local ii = bit.band(i, 255)
 	local jj = bit.band(j, 255)
-	local gi0 = perm[ii + perm[jj]] % 12
-	local gi1 = perm[ii + i1 + perm[jj + j1]] % 12
-	local gi2 = perm[ii + 1 + perm[jj + 1]] % 12
+	local gi0 = perm[ii + perm[jj+1]+1] % 12
+	local gi1 = perm[ii + i1 + perm[jj + j1+1]+1] % 12
+	local gi2 = perm[ii + 1 + perm[jj + 1+1]+1] % 12
 	-- Calculate the contribution from the three corners
 	local t0 = 0.5 - x0 * x0 - y0 * y0
 	if t0 < 0 then
