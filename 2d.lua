@@ -1,4 +1,13 @@
-local bit = bit32 or require 'bit'
+local result
+local bit = bit32
+if not bit then
+	result, bit = pcall(require, 'bit32')
+end
+if not bit then
+	result, bit = pcall(require, 'bit')
+end
+
+
 
 -- 2D simplex noise
 
