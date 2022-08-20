@@ -1,5 +1,5 @@
 local result
-local bit = bit32
+local bit = bit or bit32
 if not bit then
 	result, bit = pcall(require, 'bit32')
 end
