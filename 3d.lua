@@ -1,22 +1,27 @@
-local ffi = require 'ffi'
+local math = require 'ext.math'
 
-local function simplexDot(fp,x,y,z)	-- assumes a ctype array
-	return fp[0] * x + fp[1] * y + fp[2] * z
+local result
+local bit = bit or bit32
+if not bit then
+	result, bit = pcall(require, 'bit32')
+end
+if not bit then
+	result, bit = pcall(require, 'bit')
 end
 
-local tmp = {
+
+
+local function simplexDot(fp,x,y,z)	-- assumes a ctype array
+	return fp[1] * x + fp[2] * y + fp[3] * z
+end
+
+local grad3 = {
 	{1,1,0},{-1,1,0},{1,-1,0},{-1,-1,0},
 	{1,0,1},{-1,0,1},{1,0,-1},{-1,0,-1},
 	{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1}
 }
-local grad3 = ffi.new('float[?]', 3*#tmp)
-for i=1,#tmp do
-	for j=1,3 do
-		grad3[j-1 + 3 * (i-1)] = tmp[i][j]
-	end
-end
 
-local p = ffi.new('int[256]', {151,160,137,91,90,15,
+local p = {151,160,137,91,90,15,
   131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
   190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
   88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -28,28 +33,19 @@ local p = ffi.new('int[256]', {151,160,137,91,90,15,
   129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
   251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
   49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-  138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180})
+  138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180}
 
-local perm = ffi.new('int[512]')
+local perm = {}
 for i=0,511 do
-	perm[i] = p[bit.band(i,255)]
-end
-
--- faster in C, but luajit optimizes math.floor, (so math.floor runs 50x faster than fastfloor)
-local function fastfloor(x)
-	if x > 0 then
-		return tonumber(ffi.cast('int', x))
-	else
-		return tonumber(ffi.cast('int', x)-1)
-	end
+	perm[i+1] = assert(p[bit.band(i,255) + 1])
 end
 
 local function simplexNoise(xin,yin,zin)
 	local F3 = 1/3
 	local s = (xin+yin+zin)*F3
-	local i = ffi.cast('int', xin+s)
-	local j = ffi.cast('int', yin+s)
-	local k = ffi.cast('int', zin+s)
+	local i = math.trunc(xin+s)
+	local j = math.trunc(yin+s)
+	local k = math.trunc(zin+s)
 	local G3 = 1/6
 	local t = (i+j+k)*G3
 	local X0 = i-t
@@ -89,10 +85,10 @@ local function simplexNoise(xin,yin,zin)
 	local ii = bit.band(i,255)
 	local jj = bit.band(j,255)
 	local kk = bit.band(k,255)
-	local gi0 = perm[ii+perm[jj+perm[kk]]] % 12
-	local gi1 = perm[ii+i1+perm[jj+j1+perm[kk+k1]]] % 12
-	local gi2 = perm[ii+i2+perm[jj+j2+perm[kk+k2]]] % 12
-	local gi3 = perm[ii+1+perm[jj+1+perm[kk+1]]] % 12
+	local gi0 = perm[ii + perm[jj + perm[kk+1]+1]+1] % 12
+	local gi1 = perm[ii + i1 + perm[jj + j1 + perm[kk + k1+1]+1]+1] % 12
+	local gi2 = perm[ii + i2 + perm[jj + j2 + perm[kk + k2+1]+1]+1] % 12
+	local gi3 = perm[ii + 1 + perm[jj + 1 + perm[kk + 1+1]+1]+1] % 12
 	
 	local t0 = .6 - x0*x0 - y0*y0 - z0*z0
 	local n0
@@ -100,7 +96,7 @@ local function simplexNoise(xin,yin,zin)
 		n0 = 0 
 	else
 		t0 = t0 * t0
-		n0 = t0 * t0 * simplexDot(grad3 + 3*gi0, x0,y0,z0)
+		n0 = t0 * t0 * simplexDot(grad3[gi0+1], x0,y0,z0)
 	end
 	
 	local t1 = .6 - x1*x1 - y1*y1 - z1*z1
@@ -109,7 +105,7 @@ local function simplexNoise(xin,yin,zin)
 		n1 = 0
 	else
 		t1 = t1 * t1
-		n1 = t1 * t1 * simplexDot(grad3 + 3*gi1, x1, y1, z1)
+		n1 = t1 * t1 * simplexDot(grad3[gi1+1], x1, y1, z1)
 	end
 	
 	local t2 = .6 - x2*x2 - y2*y2 - z2*z2
@@ -118,7 +114,7 @@ local function simplexNoise(xin,yin,zin)
 		n2 = 0
 	else
 		t2 = t2 * t2
-		n2 = t2 * t2 * simplexDot(grad3 + 3*gi2, x2, y2, z2)
+		n2 = t2 * t2 * simplexDot(grad3[gi2+1], x2, y2, z2)
 	end
 	
 	local t3 = .6 - x3*x3 - y3*y3 - z3*z3
@@ -127,7 +123,7 @@ local function simplexNoise(xin,yin,zin)
 		n3 = 0
 	else
 		t3 = t3 * t3
-		n3 = t3 * t3 * simplexDot(grad3 + 3*gi3, x3, y3, z3)
+		n3 = t3 * t3 * simplexDot(grad3[gi3+1], x3, y3, z3)
 	end
 	
 	return 32 * (n0 + n1 + n2 + n3)
