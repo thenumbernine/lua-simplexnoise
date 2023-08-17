@@ -9,8 +9,6 @@ if not bit then
 	result, bit = pcall(require, 'bit')
 end
 
-
-
 local function simplexDot(fp,x,y,z)	-- assumes a ctype array
 	return fp[1] * x + fp[2] * y + fp[3] * z
 end
@@ -41,13 +39,11 @@ for i=0,511 do
 end
 
 local function simplexNoise(xin,yin,zin)
-	local F3 = 1/3
-	local s = (xin+yin+zin)*F3
-	local i = math.trunc(xin+s)
-	local j = math.trunc(yin+s)
-	local k = math.trunc(zin+s)
-	local G3 = 1/6
-	local t = (i+j+k)*G3
+	local s = (xin + yin + zin) * (1 / 3)
+	local i = math.trunc(xin + s)
+	local j = math.trunc(yin + s)
+	local k = math.trunc(zin + s)
+	local t = (i + j + k) * (1/6)
 	local X0 = i-t
 	local Y0 = j-t
 	local Z0 = k-t
@@ -72,15 +68,15 @@ local function simplexNoise(xin,yin,zin)
 			i1 = 0 j1 = 1 k1 = 0 i2 = 1 j2 = 1 k2 = 0	--YXZ
 		end
 	end
-	local x1 = x0 - i1 + G3
-	local y1 = y0 - j1 + G3
-	local z1 = z0 - k1 + G3
-	local x2 = x0 - i2 + 2*G3
-	local y2 = y0 - j2 + 2*G3
-	local z2 = z0 - k2 + 2*G3
-	local x3 = x0 - 1 + 3*G3
-	local y3 = y0 - 1 + 3*G3
-	local z3 = z0 - 1 + 3*G3
+	local x1 = x0 - i1 + (1/6)
+	local y1 = y0 - j1 + (1/6)
+	local z1 = z0 - k1 + (1/6)
+	local x2 = x0 - i2 + (1/3)
+	local y2 = y0 - j2 + (1/3)
+	local z2 = z0 - k2 + (1/3)
+	local x3 = x0 - (1/2)
+	local y3 = y0 - (1/2)
+	local z3 = z0 - (1/2)
 	
 	local ii = bit.band(i,255)
 	local jj = bit.band(j,255)
