@@ -1,0 +1,10 @@
+name = "simplexnoise"
+files = {
+	["2d.lua"] = "simplexnoise/2d.lua",
+	["3d.lua"] = "simplexnoise/3d.lua",
+	["LICENSE"] = "simplexnoise/LICENSE",
+	["README.md"] = "simplexnoise/README.md",
+}
+deps = {
+	"ext",
+}
